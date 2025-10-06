@@ -9,7 +9,8 @@ from typing import List
 from core.models.catalog import (
     LabelAssignmentRequest, 
     LabelAssignmentResponse, 
-    AssetType, 
+    AssetType,
+    Protocol,
     RelationshipPattern
 )
 from core.models.base import Node
@@ -19,7 +20,9 @@ from core.utils.catalog import (
     load_protocols,
     load_relationship_patterns,
     get_catalogs_info,
-    assign_labels_to_node
+    assign_labels_to_node,
+    get_protocols_by_layer,
+    get_protocols_by_relationship
 )
 
 # Create router for catalog endpoints
@@ -88,10 +91,28 @@ async def get_relationship_patterns_endpoint():
     return get_relationship_patterns_data()
 
 
-@router.get("/protocols", response_model=List[str])
+@router.get("/protocols", response_model=List[Protocol])
 async def get_protocols_endpoint():
-    """Get supported network protocols"""
+    """Get supported network protocols with detailed information"""
     return get_protocols_data()
+
+
+@router.get("/protocols/layer/{layer}", response_model=List[Protocol])
+async def get_protocols_by_layer_endpoint(layer: str):
+    """Get protocols filtered by OSI layer (data_link, network, transport, session, presentation, application)"""
+    try:
+        return get_protocols_by_layer(layer)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error filtering protocols by layer: {str(e)}")
+
+
+@router.get("/protocols/relationship/{relationship}", response_model=List[Protocol])
+async def get_protocols_by_relationship_endpoint(relationship: str):
+    """Get protocols filtered by relationship type (connects, uses, etc.)"""
+    try:
+        return get_protocols_by_relationship(relationship)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error filtering protocols by relationship: {str(e)}")
 
 
 @router.get("/info")

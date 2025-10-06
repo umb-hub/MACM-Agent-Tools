@@ -8,7 +8,7 @@ import os
 from typing import List, Dict, Any
 from pathlib import Path
 
-from ..models.catalog import AssetType, RelationshipPattern
+from ..models.catalog import AssetType, RelationshipPattern, Protocol
 
 # Get the project root directory
 PROJECT_ROOT = Path(__file__).parent.parent.parent
@@ -49,10 +49,27 @@ def load_relationships() -> List[str]:
     return [f"{row['type']}: {row['description']}" for row in data]
 
 
-def load_protocols() -> List[str]:
-    """Load protocols from CSV file"""
+def load_protocols() -> List[Protocol]:
+    """Load protocols from CSV file with detailed information"""
     data = read_csv_file("protocols.csv")
-    return [row['Name'] for row in data]
+    protocols = []
+    
+    for row in data:
+        # Parse ports - handle empty ports and split by comma
+        ports = []
+        if row.get('Ports') and row['Ports'].strip():
+            ports = [port.strip() for port in row['Ports'].split(',')]
+        
+        protocols.append(Protocol(
+            name=row['Name'],
+            extended_name=row.get('Extended Name') if row.get('Extended Name') else None,
+            description=row['Description'],
+            layer=row['Layer'],
+            relationship=row['Relationship'],
+            ports=ports
+        ))
+    
+    return protocols
 
 
 def load_relationship_patterns() -> List[RelationshipPattern]:
@@ -110,6 +127,18 @@ def assign_labels_to_node(node) -> None:
         else:
             node.primary_label = node.type
             node.secondary_label = None
+
+
+def get_protocols_by_layer(layer: str) -> List[Protocol]:
+    """Load protocols filtered by specific layer"""
+    all_protocols = load_protocols()
+    return [protocol for protocol in all_protocols if protocol.layer.lower() == layer.lower()]
+
+
+def get_protocols_by_relationship(relationship: str) -> List[Protocol]:
+    """Load protocols filtered by relationship type"""
+    all_protocols = load_protocols()
+    return [protocol for protocol in all_protocols if protocol.relationship.lower() == relationship.lower()]
 
 
 def get_catalogs_info() -> Dict[str, Any]:

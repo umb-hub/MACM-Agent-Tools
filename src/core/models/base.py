@@ -18,9 +18,6 @@ class ProtocolStack(BaseModel):
     session_protocol: Optional[str] = Field(None, description="Layer 5 - Session Protocol (e.g., NetBIOS, RPC)")
     presentation_protocol: Optional[str] = Field(None, description="Layer 6 - Presentation Protocol (e.g., TLS, SSL)")
     application_protocol: Optional[str] = Field(None, description="Layer 7 - Application Protocol (e.g., HTTP, MQTT, gRPC)")
-    
-    # Additional protocol properties
-    properties: Optional[Dict[str, Any]] = Field(None, description="Additional protocol-specific properties")
 
 
 class Node(BaseModel):

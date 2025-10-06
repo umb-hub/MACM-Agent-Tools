@@ -4,7 +4,7 @@ Models related to catalogs, asset types, and relationship patterns
 """
 
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 from .base import Node
 
 
@@ -12,6 +12,16 @@ class AssetType(BaseModel):
     """Asset type definition with description"""
     type: str
     description: str
+
+
+class Protocol(BaseModel):
+    """Protocol definition with detailed information"""
+    name: str
+    extended_name: Optional[str] = None
+    description: str
+    layer: str  # Data Link, Network, Transport, Session, Presentation, Application
+    relationship: str  # connects, uses, etc.
+    ports: List[str] = []  # List of port numbers or ranges
 
 
 class RelationshipPattern(BaseModel):
