@@ -9,6 +9,7 @@ import uvicorn
 
 from api.routes.catalogs import router as catalogs_router
 from api.routes.checkers import router as checkers_router
+from api.routes.cypher import router as cypher_router
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -20,6 +21,7 @@ app = FastAPI(
 # Include API routers
 app.include_router(catalogs_router, prefix="/api")
 app.include_router(checkers_router, prefix="/api")
+app.include_router(cypher_router, prefix="/api")
 
 # Health check endpoint
 @app.get("/api/health")
@@ -37,6 +39,7 @@ async def root():
         "endpoints": {
             "catalogs": "/api/catalogs",
             "checkers": "/api/checkers",
+            "cypher": "/api/cypher",
             "health": "/api/health"
         }
     }
