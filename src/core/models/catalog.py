@@ -23,11 +23,11 @@ class RelationshipPattern(BaseModel):
 
 class LabelAssignmentRequest(BaseModel):
     """Request to assign labels to nodes"""
-    nodes: List['Node']
+    nodes: List[Node]
 
 
 class LabelAssignmentResponse(BaseModel):
     """Response from label assignment operation"""
     success: bool
-    labeled_nodes: List['Node'] = []
+    labeled_nodes: List[Node] = []
     errors: List[str] = []
