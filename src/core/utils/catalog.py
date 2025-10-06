@@ -8,10 +8,10 @@ import os
 from typing import List, Dict, Any
 from pathlib import Path
 
-from models import AssetType, RelationshipPattern
+from ..models.catalog import AssetType, RelationshipPattern
 
 # Get the project root directory
-PROJECT_ROOT = Path(__file__).parent.parent
+PROJECT_ROOT = Path(__file__).parent.parent.parent
 CATALOGS_DIR = PROJECT_ROOT / "catalogs"
 
 

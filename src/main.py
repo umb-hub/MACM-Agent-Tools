@@ -7,8 +7,8 @@ FastAPI server implementing the endpoints defined in actions.yaml
 from fastapi import FastAPI
 import uvicorn
 
-from api.catalogs import router as catalogs_router
-from api.checkers import router as checkers_router
+from api.routes.catalogs import router as catalogs_router
+from api.routes.checkers import router as checkers_router
 
 # Initialize FastAPI app
 app = FastAPI(

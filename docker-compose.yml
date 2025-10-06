@@ -53,12 +53,6 @@ services:
     networks:
       - macm-network
 
-volumes:
-  neo4j-data:
-    name: macm-neo4j-data
-  neo4j-logs:
-    name: macm-neo4j-logs
-
 networks:
   macm-network:
     driver: bridge

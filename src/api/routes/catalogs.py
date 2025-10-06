@@ -6,14 +6,14 @@ Endpoints for managing MACM catalogs (labels, asset types, relationships, protoc
 from fastapi import APIRouter, HTTPException
 from typing import List
 
-from models import (
+from core.models.catalog import (
     LabelAssignmentRequest, 
     LabelAssignmentResponse, 
     AssetType, 
-    RelationshipPattern,
-    Node
+    RelationshipPattern
 )
-from catalog_utils import (
+from core.models.base import Node
+from core.utils.catalog import (
     load_asset_types,
     load_relationships,
     load_protocols,
@@ -64,14 +64,7 @@ async def assign_labels(request: LabelAssignmentRequest):
         return LabelAssignmentResponse(
             success=len(errors) == 0,
             labeled_nodes=labeled_nodes,
-            errors=errors,
-            warnings=warnings,
-            summary={
-                "total_nodes": len(request.nodes),
-                "labeled_nodes": len(labeled_nodes),
-                "total_errors": len(errors),
-                "total_warnings": len(warnings)
-            }
+            errors=errors
         )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
