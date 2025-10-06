@@ -1,0 +1,448 @@
+openapi: 3.1.0
+info:
+  title: MACM API - Model Architecture Catalog Management
+  description: API for managing architecture catalogs and validating configurations according to MACM specifications.
+  version: 1.0.0
+servers:
+  - url: https://localhost:8080/api
+    description: MACM API server
+
+paths:
+  /catalogs/labels:
+    post:
+      operationId: assignLabels
+      summary: Assign labels to nodes
+      description: Automatically assigns primary and secondary labels to nodes based on their asset types from MACM catalog.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nodes
+              properties:
+                nodes:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - component_id
+                      - name
+                      - type
+                    properties:
+                      component_id:
+                        type: integer
+                        description: Unique identifier
+                      name:
+                        type: string
+                        description: Name of the node
+                      type:
+                        type: string
+                        description: Asset type (Primary.Secondary format)
+                      primary_label:
+                        type: string
+                        description: Primary label (optional, will be overwritten)
+                      secondary_label:
+                        type: string
+                        description: Secondary label (optional, will be overwritten)
+              example:
+                nodes:
+                  - component_id: 1
+                    name: "Web Server"
+                    type: "Service.Web"
+                  - component_id: 2
+                    name: "Database"
+                    type: "Service.DB"
+      responses:
+        '200':
+          description: Successfully assigned labels to nodes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: Whether the operation was successful
+                  labeled_nodes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        component_id:
+                          type: integer
+                        name:
+                          type: string
+                        type:
+                          type: string
+                        primary_label:
+                          type: string
+                        secondary_label:
+                          type: string
+                    description: Nodes with assigned labels
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                    description: List of error messages
+                  warnings:
+                    type: array
+                    items:
+                      type: string
+                    description: List of warning messages
+                  summary:
+                    type: object
+                    properties:
+                      total_nodes:
+                        type: integer
+                      enriched_nodes:
+                        type: integer
+                      total_errors:
+                        type: integer
+                      total_warnings:
+                        type: integer
+                example:
+                  success: true
+                  enriched_nodes:
+                    - component_id: 1
+                      name: "Web Server"
+                      type: "Service.Web"
+                      primary_label: "Service"
+                      secondary_label: "Server"
+                  errors: []
+                  warnings: []
+                  summary:
+                    total_nodes: 1
+                    enriched_nodes: 1
+                    total_errors: 0
+                    total_warnings: 0
+        '400':
+          description: Invalid input or processing errors
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                  summary:
+                    type: object
+  /catalogs/asset_types:
+    get:
+      operationId: getAssetTypes
+      summary: Get asset types
+      description: Retrieves valid asset types in Primary.Secondary format.
+      responses:
+        '200':
+          description: Asset types array
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                    description:
+                      type: string
+                description: Valid asset types with descriptions
+                example: 
+                  - type: "Party.Human"
+                    description: "A user or external actor interacting with the system."
+                  - type: "Service.Web"
+                    description: "A web service hosting websites and applications."
+        '405':
+          description: Method not allowed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+  /catalogs/relationships:
+    get:
+      operationId: getRelationships
+      summary: Get relationship types
+      description: Retrieves available relationship types with descriptions.
+      responses:
+        '200':
+          description: Relationship types array
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                description: Available relationship types with descriptions
+                example: ["uses: Functional dependency between services/systems", "hosts: Hosting/deployment relation"]
+        '405':
+          description: Method not allowed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+  /catalogs/relationship_pattern:
+    get:
+      operationId: getRelationshipPatterns
+      summary: Get relationship patterns
+      description: Retrieves valid relationship patterns between asset types.
+      responses:
+        '200':
+          description: Relationship patterns array
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    source:
+                      type: string
+                    type:
+                      type: string
+                    target:
+                      type: array
+                      items:
+                        type: string
+                description: Valid relationship patterns
+                example: 
+                  - source: "Party"
+                    type: "interacts"
+                    target: ["Service", "HW", "Network"]
+        '405':
+          description: Method not allowed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+  /catalogs/protocols:
+    get:
+      operationId: getProtocols
+      summary: Get supported protocols
+      description: Retrieves list of supported network protocols.
+      responses:
+        '200':
+          description: Protocols array
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                description: Supported network protocols
+                example: ["HTTP", "HTTPS", "GTP", "NAS", "SIP", "Diameter"]
+        '405':
+          description: Method not allowed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+  /checkers/syntax:
+    post:
+      operationId: validateSyntax
+      summary: Validate syntax
+      description: Validates node and relationship structure according to MACM syntax rules.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ArchitectureModel'
+      responses:
+        '200':
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationResult'
+        '400':
+          description: Invalid syntax input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationResult'
+
+    get:
+      operationId: getSyntaxDocumentation
+      summary: Get syntax checker documentation
+      description: Returns API documentation for the syntax validation.
+      responses:
+        '200':
+          description: Syntax checker documentation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  version:
+                    type: string
+                  description:
+                    type: string
+                  endpoint:
+                    type: string
+                  input_format:
+                    type: object
+                  validation_rules:
+                    type: array
+                    items:
+                      type: string
+
+  /checkers/semantic:
+    post:
+      operationId: validateSemantic
+      summary: Validate semantic consistency
+      description: Validates semantic rules such as type mapping and hosting constraints.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ArchitectureModel'
+      responses:
+        '200':
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationResult'
+        '400':
+          description: Invalid semantic input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationResult'
+
+    get:
+      operationId: getSemanticDocumentation
+      summary: Get semantic checker documentation
+      description: Returns API documentation for the semantic validation.
+      responses:
+        '200':
+          description: Semantic checker documentation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  version:
+                    type: string
+                  description:
+                    type: string
+                  endpoint:
+                    type: string
+                  input_format:
+                    type: object
+                  semantic_checks:
+                    type: array
+                    items:
+                      type: string
+                  hosting_rules:
+                    type: array
+                    items:
+                      type: string
+
+components:
+  schemas:
+    ValidationResult:
+      type: object
+      properties:
+        valid:
+          type: boolean
+          description: Whether the validation passed
+        errors:
+          type: array
+          items:
+            type: string
+          description: List of validation errors
+        warnings:
+          type: array
+          items:
+            type: string
+          description: List of validation warnings
+        summary:
+          type: object
+          properties:
+            total_errors:
+              type: integer
+            total_warnings:
+              type: integer
+
+    Node:
+      type: object
+      required:
+        - component_id
+        - name
+        - type
+        - primary_label
+      properties:
+        component_id:
+          type: integer
+          description: Unique identifier
+        name:
+          type: string
+          description: Name of the node
+        type:
+          type: string
+          description: Asset type (Primary.Secondary)
+        primary_label:
+          type: string
+          description: Primary label that must match the type's primary part
+
+    Relationship:
+      type: object
+      required:
+        - source
+        - target
+        - type
+      properties:
+        source:
+          type: integer
+          description: Source node ID
+        target:
+          type: integer
+          description: Target node ID
+        type:
+          type: string
+          description: Relationship type
+        protocol:
+          type: string
+          description: Optional network protocol
+
+    ArchitectureModel:
+      type: object
+      required:
+        - nodes
+        - relationships
+      properties:
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Node'
+        relationships:
+          type: array
+          items:
+            $ref: '#/components/schemas/Relationship'
