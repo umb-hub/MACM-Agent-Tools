@@ -27,6 +27,32 @@ services:
       start_period: 40s
     networks:
       - macm-network
+    depends_on:
+      - neo4j-dev
+
+  neo4j-dev:
+    image: neo4j:5.11.0-enterprise
+    container_name: macm-neo4j-dev
+    ports:
+      - "7474:7474"  # HTTP
+      - "7687:7687"  # Bolt
+    environment:
+      - NEO4J_AUTH=neo4j/macmpassword
+      - NEO4J_PLUGINS=["apoc", "apoc-extended"]
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+      - NEO4J_dbms_default__database=macm
+    volumes:
+      - ./neo4j/config:/conf
+      - ./neo4j/init:/var/lib/neo4j/db_init
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "macmpassword", "RETURN 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - macm-network
 
 networks:
   macm-network:
