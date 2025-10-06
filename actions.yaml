@@ -136,7 +136,7 @@ paths:
     get:
       operationId: getAssetTypes
       summary: Get asset types
-      description: Retrieves valid asset types in Primary.Secondary format.
+      description: Retrieves valid asset types with descriptions.
       responses:
         '200':
           description: Asset types array
