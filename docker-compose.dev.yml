@@ -12,6 +12,12 @@ services:
       - PYTHONPATH=/app/src
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONUNBUFFERED=1
+      - SERVER_URL=http://localhost:8080
+      # Neo4j connection settings for database validation
+      - NEO4J_URI=bolt://neo4j-dev:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=macmpassword
+      - NEO4J_DATABASE=macm
     volumes:
       # Mount source code for hot reload during development
       - ./src:/app/src:ro
@@ -42,7 +48,7 @@ services:
       - NEO4J_dbms_default__database=macm
     volumes:
       - ./neo4j/config:/conf
-      - ./neo4j/triggers:/var/lib/neo4j/db_init/triggers
+      - ./neo4j/triggers-dev:/var/lib/neo4j/db_init/triggers
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "macmpassword", "RETURN 1"]

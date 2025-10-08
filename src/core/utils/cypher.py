@@ -54,7 +54,7 @@ def format_node_properties(node: Node) -> str:
     Format node properties for Cypher CREATE statement
     """
     properties = {
-        'component_id': node.component_id,
+        'component_id': f"'{node.component_id}'",
         'name': f"'{node.name}'",
         'type': f"'{node.type}'"
     }

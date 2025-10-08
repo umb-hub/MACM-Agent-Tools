@@ -22,7 +22,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy source code and catalogs
 COPY src/ ./src/
-COPY catalogs/ ./catalogs/
 
 # Create a non-root user
 RUN useradd --create-home --shell /bin/bash app && chown -R app:app /app

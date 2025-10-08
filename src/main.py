@@ -6,6 +6,7 @@ FastAPI server implementing the endpoints defined in actions.yaml
 
 from fastapi import FastAPI
 import uvicorn
+import os
 
 from api.routes.catalogs import router as catalogs_router
 from api.routes.checkers import router as checkers_router
@@ -15,6 +16,7 @@ from api.routes.cypher import router as cypher_router
 app = FastAPI(
     title="MACM Agent Tools API",
     description="Multi-purpose Application Composition Model (MACM) API for catalog management and model validation",
+    servers=[{"url": os.getenv("SERVER_URL", "http://localhost:8080")}],
     version="1.0.0"
 )
 
@@ -41,6 +43,13 @@ async def root():
             "checkers": "/api/checkers",
             "cypher": "/api/cypher",
             "health": "/api/health"
+        },
+        "validation_endpoints": {
+            "syntax": "/api/checkers/syntax",
+            "semantic": "/api/checkers/semantic", 
+            "database": "/api/checkers/database",
+            "comprehensive": "/api/checkers/validate-all",
+            "test_connection": "/api/checkers/database/test-connection"
         }
     }
 
