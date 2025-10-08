@@ -9,6 +9,7 @@ from neo4j import AsyncGraphDatabase, AsyncDriver
 
 from .base import BaseConnector
 from core.models.base import ArchitectureModel, Node, Relationship
+from core.utils.cypher import architecture_model_to_cypher
 
 
 class Neo4jConnector(BaseConnector):
@@ -61,7 +62,7 @@ class Neo4jConnector(BaseConnector):
             print(f"Error disconnecting from Neo4j: {e}")
             return False
     
-    async def read_model(self, model_id: Optional[str] = None) -> ArchitectureModel:
+    async def read_model(self) -> ArchitectureModel:
         """Read architecture model from Neo4j"""
         if not self.connected or not self.driver:
             raise RuntimeError("Not connected to Neo4j database")
@@ -91,109 +92,120 @@ class Neo4jConnector(BaseConnector):
             rels_query = """
             MATCH (source:Component)-[r]->(target:Component)
             RETURN source.name as source, target.name as target, 
-                   type(r) as type, r.protocol as protocol
+                   type(r) as type, r.protocol as protocol, r.protocol_data as protocol_data
             """
             rels_result = await session.run(rels_query)
             rels_data = await rels_result.data()
             
-            relationships = [
-                Relationship(
+            relationships = []
+            for record in rels_data:
+                protocol_value = record.get("protocol")
+                protocol_data = record.get("protocol_data")
+                
+                # If we have structured protocol data, parse it
+                if protocol_data:
+                    try:
+                        import json
+                        from core.models.base import ProtocolStack
+                        protocol_dict = json.loads(protocol_data)
+                        protocol_value = ProtocolStack(**protocol_dict)
+                    except (json.JSONDecodeError, TypeError, ValueError):
+                        # Fall back to simple string protocol
+                        protocol_value = protocol_value
+                
+                relationships.append(Relationship(
                     source=record["source"],
                     target=record["target"],
                     type=record["type"],
-                    protocol=record.get("protocol")
-                )
-                for record in rels_data
-            ]
+                    protocol=protocol_value
+                ))
             
             return ArchitectureModel(nodes=nodes, relationships=relationships)
     
-    async def write_model(self, model: ArchitectureModel, model_id: Optional[str] = None) -> bool:
-        """Write architecture model to Neo4j"""
+    async def write_model(self, model: ArchitectureModel) -> bool:
+        """Write architecture model to Neo4j using cypher utility"""
         if not self.connected or not self.driver:
             raise RuntimeError("Not connected to Neo4j database")
         
         try:
             async with self.driver.session(database=self.database) as session:
-                # Clear existing data if model_id is provided
-                if model_id:
-                    await session.run("MATCH (n:Component {model_id: $model_id}) DETACH DELETE n", 
-                                    model_id=model_id)
+                # Generate Cypher CREATE statement using utility function
+                cypher_query = architecture_model_to_cypher(model, format_style="multiline")
                 
-                # Create nodes
-                for node in model.nodes:
-                    create_node_query = """
-                    CREATE (n:Component {
-                        component_id: $component_id,
-                        name: $name,
-                        type: $type,
-                        primary_label: $primary_label,
-                        secondary_label: $secondary_label,
-                        model_id: $model_id
-                    })
-                    """
-                    await session.run(create_node_query, 
-                                    component_id=node.component_id,
-                                    name=node.name,
-                                    type=node.type,
-                                    primary_label=node.primary_label,
-                                    secondary_label=node.secondary_label,
-                                    model_id=model_id or "default")
-                
-                # Create relationships
-                for rel in model.relationships:
-                    create_rel_query = f"""
-                    MATCH (source:Component {{name: $source}})
-                    MATCH (target:Component {{name: $target}})
-                    CREATE (source)-[r:`{rel.type}` {{protocol: $protocol}}]->(target)
-                    """
-                    await session.run(create_rel_query,
-                                    source=rel.source,
-                                    target=rel.target,
-                                    protocol=rel.protocol)
+                # Execute the cypher query
+                await session.run(cypher_query)
                 
                 return True
         except Exception as e:
             print(f"Error writing model to Neo4j: {e}")
             return False
     
-    async def list_models(self) -> List[Dict[str, Any]]:
-        """List available architecture models in Neo4j"""
+    async def list_models(self) -> Dict[str, Any]:
+        """Get information about the architecture model in Neo4j"""
         if not self.connected or not self.driver:
             raise RuntimeError("Not connected to Neo4j database")
         
         async with self.driver.session(database=self.database) as session:
             query = """
             MATCH (n:Component)
-            RETURN DISTINCT n.model_id as model_id, 
-                   count(n) as node_count,
+            RETURN count(n) as node_count,
                    collect(DISTINCT n.type) as node_types
             """
             result = await session.run(query)
-            data = await result.data()
+            data = await result.single()
             
-            return [
-                {
-                    "model_id": record["model_id"],
-                    "node_count": record["node_count"],
-                    "node_types": record["node_types"]
+            if data:
+                return {
+                    "node_count": data["node_count"],
+                    "node_types": data["node_types"]
                 }
-                for record in data
-            ]
+            else:
+                return {
+                    "node_count": 0,
+                    "node_types": []
+                }
     
-    async def delete_model(self, model_id: str) -> bool:
-        """Delete architecture model from Neo4j"""
+    async def test_model_load(self, model: ArchitectureModel) -> tuple[bool, List[str]]:
+        """Test loading a model to validate it against Neo4j triggers and constraints"""
         if not self.connected or not self.driver:
             raise RuntimeError("Not connected to Neo4j database")
         
+        errors = []
         try:
             async with self.driver.session(database=self.database) as session:
-                query = "MATCH (n:Component {model_id: $model_id}) DETACH DELETE n"
-                await session.run(query, model_id=model_id)
-                return True
+                # Generate Cypher CREATE statement
+                cypher_query = architecture_model_to_cypher(model, format_style="multiline")
+
+                print("Testing model load with Cypher:")
+                print(cypher_query)
+                
+                # Use proper async transaction pattern
+                tx = await session.begin_transaction()
+                try:
+                    await tx.run(cypher_query)
+                    await tx.commit()
+                except Exception as e:
+                    error_msg = str(e)
+                    errors.append(error_msg)
+                    await tx.rollback()
+                    raise
+                finally:
+                    await tx.close()
+
+                # If we get here, the model loaded successfully
+                return True, errors
+                
         except Exception as e:
-            print(f"Error deleting model from Neo4j: {e}")
-            return False
+            error_msg = str(e)
+            errors.append(error_msg)
+            return False, errors
+        finally:
+            # Always clean up test data
+            try:
+                async with self.driver.session(database=self.database) as session:
+                    await session.run("MATCH (n) DETACH DELETE n")
+            except Exception as cleanup_error:
+                errors.append(f"Cleanup error: {cleanup_error}")
     
     def validate_config(self) -> bool:
         """Validate Neo4j connector configuration"""

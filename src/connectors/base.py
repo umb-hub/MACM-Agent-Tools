@@ -27,23 +27,18 @@ class BaseConnector(ABC):
         pass
     
     @abstractmethod
-    async def read_model(self, model_id: Optional[str] = None) -> ArchitectureModel:
+    async def read_model(self) -> ArchitectureModel:
         """Read architecture model from data source"""
         pass
     
     @abstractmethod
-    async def write_model(self, model: ArchitectureModel, model_id: Optional[str] = None) -> bool:
+    async def write_model(self, model: ArchitectureModel) -> bool:
         """Write architecture model to data source"""
         pass
     
     @abstractmethod
-    async def list_models(self) -> List[Dict[str, Any]]:
-        """List available architecture models"""
-        pass
-    
-    @abstractmethod
-    async def delete_model(self, model_id: str) -> bool:
-        """Delete architecture model from data source"""
+    async def list_models(self) -> Dict[str, Any]:
+        """Get information about architecture models in data source"""
         pass
     
     def validate_config(self) -> bool:
