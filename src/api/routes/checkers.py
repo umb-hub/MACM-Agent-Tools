@@ -71,10 +71,6 @@ async def validate_database(
     """
     Validate architecture model against MACM database constraints and triggers
     Tests the model by attempting to load it into Neo4j database
-    
-    Neo4j connection can be configured via:
-    1. Environment variables: NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD, NEO4J_DATABASE
-    2. Request parameters (overrides environment variables)
     """
     try:
         # Get Neo4j configuration from environment variables or parameters
