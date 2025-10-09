@@ -32,8 +32,8 @@ class Node(BaseModel):
 
 class Relationship(BaseModel):
     """Architecture model relationship between nodes"""
-    source: str
-    target: str
+    source: str = Field(description="Source component - can be a numeric string (component ID) or component name string")
+    target: str = Field(description="Target component - can be a numeric string (component ID) or component name string")
     type: str
     protocol: Optional[Union[str, ProtocolStack]] = Field(
         None, 
@@ -46,3 +46,16 @@ class ArchitectureModel(BaseModel):
     """Complete architecture model with nodes and relationships"""
     nodes: List[Node]
     relationships: List[Relationship]
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        self._component_id_map = {str(node.component_id): node for node in self.nodes}
+        self._name_map = {node.name: node for node in self.nodes}
+        # Convert relationship source/target from component_id (numeric string, possibly multiple digits) to component name
+        for rel in self.relationships:
+            # Convert source if it's a numeric string (multiple digits allowed) and matches a component_id
+            if rel.source.isdigit() and rel.source in self._component_id_map:
+                rel.source = self._component_id_map[rel.source].name
+            # Convert target if it's a numeric string (multiple digits allowed) and matches a component_id
+            if rel.target.isdigit() and rel.target in self._component_id_map:
+                rel.target = self._component_id_map[rel.target].name

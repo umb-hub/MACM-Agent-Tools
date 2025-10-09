@@ -3,7 +3,7 @@ Cypher Conversion Utilities
 Functions to convert MACM Architecture Models to Neo4j Cypher CREATE statements
 """
 
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 from core.models.base import ArchitectureModel, Node, Relationship, ProtocolStack
 
 
@@ -86,25 +86,19 @@ def format_relationship_properties(relationship: Relationship) -> str:
     
     if relationship.protocol:
         if isinstance(relationship.protocol, ProtocolStack):
-            # For ProtocolStack, use the application protocol as main protocol
+            # For ProtocolStack, add detailed protocol information as separate properties
             if relationship.protocol.application_protocol:
                 properties['application_protocol'] = f"'{relationship.protocol.application_protocol}'"
-            
-            # Add detailed protocol information as separate properties
             if relationship.protocol.transport_protocol:
                 properties['transport_protocol'] = f"'{relationship.protocol.transport_protocol}'"
             if relationship.protocol.presentation_protocol:
                 properties['presentation_protocol'] = f"'{relationship.protocol.presentation_protocol}'"
             if relationship.protocol.network_protocol:
                 properties['network_protocol'] = f"'{relationship.protocol.network_protocol}'"
-            
-            # Add any additional protocol properties
-            if relationship.protocol.properties:
-                for key, value in relationship.protocol.properties.items():
-                    if isinstance(value, str):
-                        properties[f"protocol_{key}"] = f"'{value}'"
-                    else:
-                        properties[f"protocol_{key}"] = str(value)
+            if relationship.protocol.session_protocol:
+                properties['session_protocol'] = f"'{relationship.protocol.session_protocol}'"
+            if relationship.protocol.data_link_protocol:
+                properties['data_link_protocol'] = f"'{relationship.protocol.data_link_protocol}'"
         else:
             # Simple string protocol
             properties['protocol'] = f"'{relationship.protocol}'"
