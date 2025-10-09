@@ -97,7 +97,7 @@ async def get_protocols_endpoint():
     return get_protocols_data()
 
 
-@router.get("/protocols/layer/{layer}", response_model=List[Protocol])
+@router.get("/protocols/layer/{layer}", response_model=List[Protocol], include_in_schema=False)
 async def get_protocols_by_layer_endpoint(layer: str):
     """Get protocols filtered by OSI layer (data_link, network, transport, session, presentation, application)"""
     try:
@@ -106,7 +106,7 @@ async def get_protocols_by_layer_endpoint(layer: str):
         raise HTTPException(status_code=400, detail=f"Error filtering protocols by layer: {str(e)}")
 
 
-@router.get("/protocols/relationship/{relationship}", response_model=List[Protocol])
+@router.get("/protocols/relationship/{relationship}", response_model=List[Protocol], include_in_schema=False)
 async def get_protocols_by_relationship_endpoint(relationship: str):
     """Get protocols filtered by relationship type (connects, uses, etc.)"""
     try:
@@ -115,7 +115,7 @@ async def get_protocols_by_relationship_endpoint(relationship: str):
         raise HTTPException(status_code=400, detail=f"Error filtering protocols by relationship: {str(e)}")
 
 
-@router.get("/info")
+@router.get("/info", include_in_schema=False)
 async def get_catalogs_info_endpoint():
     """Get information about catalog files and their status"""
     return get_catalogs_info()

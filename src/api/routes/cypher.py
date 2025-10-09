@@ -117,7 +117,7 @@ async def convert_relationships_to_cypher(model: ArchitectureModel):
         raise HTTPException(status_code=400, detail=f"Error converting relationships to Cypher: {str(e)}")
 
 
-@router.post("/generate/file")
+@router.post("/generate/file", include_in_schema=False)
 async def generate_cypher_file_endpoint(
     model: ArchitectureModel,
     filename: Optional[str] = None
@@ -221,7 +221,7 @@ async def validate_architecture_model(model: ArchitectureModel):
         raise HTTPException(status_code=400, detail=f"Error validating model: {str(e)}")
 
 
-@router.get("/info")
+@router.get("/info", include_in_schema=False)
 async def get_cypher_conversion_info():
     """
     Get information about Cypher conversion capabilities and options

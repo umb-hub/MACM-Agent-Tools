@@ -26,13 +26,13 @@ app.include_router(checkers_router, prefix="/api")
 app.include_router(cypher_router, prefix="/api")
 
 # Health check endpoint
-@app.get("/api/health")
+@app.get("/api/health", include_in_schema=False)
 async def health_check():
     """Basic health check endpoint"""
     return {"status": "healthy", "service": "MACM Agent Tools API"}
 
 # Root endpoint
-@app.get("/")
+@app.get("/", include_in_schema=False)
 async def root():
     """Root endpoint with API information"""
     return {

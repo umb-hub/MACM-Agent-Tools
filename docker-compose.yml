@@ -37,7 +37,7 @@ services:
       - NEO4J_dbms_default__database=macm
     volumes:
       - ./neo4j/config:/conf
-      - ./neo4j/init:/var/lib/neo4j/db_init
+      - ./neo4j/triggers-dev:/var/lib/neo4j/db_init/triggers
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "macmpassword", "RETURN 1"]

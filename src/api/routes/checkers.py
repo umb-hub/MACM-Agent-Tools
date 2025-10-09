@@ -26,7 +26,7 @@ except ImportError:
 router = APIRouter(prefix="/checkers", tags=["checkers"])
 
 
-@router.post("/syntax", response_model=ValidationResult)
+@router.post("/syntax", response_model=ValidationResult, include_in_schema=SyntaxChecker is not None)
 async def validate_syntax(model: ArchitectureModel):
     """
     Validate architecture model syntax against MACM rules
@@ -43,7 +43,7 @@ async def validate_syntax(model: ArchitectureModel):
         raise HTTPException(status_code=400, detail=f"Syntax validation error: {str(e)}")
 
 
-@router.post("/semantic", response_model=ValidationResult)
+@router.post("/semantic", response_model=ValidationResult, include_in_schema=SemanticChecker is not None)
 async def validate_semantic(model: ArchitectureModel):
     """
     Validate semantic consistency of architecture model
@@ -105,7 +105,7 @@ async def validate_database(
         raise HTTPException(status_code=500, detail=f"Database validation error: {str(e)}")
 
 
-@router.get("/database/test-connection")
+@router.get("/database/test-connection", include_in_schema=False)
 async def test_neo4j_connection(
     neo4j_uri: Optional[str] = None,
     neo4j_user: Optional[str] = None,
@@ -161,7 +161,7 @@ async def test_neo4j_connection(
         raise HTTPException(status_code=500, detail=f"Connection test error: {str(e)}")
 
 
-@router.post("/validate-all")
+@router.post("/validate-all", include_in_schema=False)
 async def validate_all(
     model: ArchitectureModel,
     neo4j_uri: Optional[str] = None,
