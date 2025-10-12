@@ -48,7 +48,6 @@ async def assign_labels(request: LabelAssignmentRequest):
     try:
         labeled_nodes = []
         errors = []
-        warnings = []
         
         for node in request.nodes:
             try:
@@ -59,7 +58,7 @@ async def assign_labels(request: LabelAssignmentRequest):
                 # Validate against known asset types
                 asset_types = get_asset_types()
                 if not any(at.type == node.type for at in asset_types):
-                    warnings.append(f"Node {node.component_id}: type '{node.type}' not found in catalog")
+                    errors.append(f"Node {node.component_id}: type '{node.type}' not found in catalog")
                     
             except Exception as e:
                 errors.append(f"Error processing node {node.component_id}: {str(e)}")
