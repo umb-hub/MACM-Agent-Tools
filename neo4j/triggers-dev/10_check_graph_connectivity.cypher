@@ -1,5 +1,5 @@
 CALL apoc.trigger.add(
-  'check_graph_connectivity_global',
+  '10_check_graph_connectivity_global',
   '
     // Select a random node as starting point
     MATCH (start)

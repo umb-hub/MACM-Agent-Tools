@@ -19,7 +19,7 @@ CALL apoc.trigger.add(
 	WITH collect(violationDetail) AS violations
 	CALL apoc.util.validate(
 		size(violations) > 0,
-		"/*Rule 2 violation: Each service must have exactly one host. The following violations were found: " + apoc.text.join(violations, "; ") + "*/",
+		"/*Rule 11 violation: Each service must have exactly one host. The following violations were found: " + apoc.text.join(violations, "; ") + "*/",
 		[]
 	)
 	RETURN true
