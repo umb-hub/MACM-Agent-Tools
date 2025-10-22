@@ -28,7 +28,6 @@ CALL apoc.trigger.add(
 		["CSP", "provides", "SystemLayer"],
 		["Network", "connects", "Network"],
 		["Network", "connects", "Virtual"],
-		["Network", "connects", "SystemLayer"],
 		["Network", "connects", "HW"],
 		["Network", "connects", "CSP"]
 	] AS allowedPatterns
