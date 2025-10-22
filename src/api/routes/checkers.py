@@ -140,8 +140,8 @@ async def get_database_constraints():
             "service_hosting_requirements": {
                 "rule_id": "Rule 2",
                 "category": "Semantic",
-                "name": "Single Host Requirement for Services",
-                "description": "Every service component must have exactly one hosting relationship to establish clear ownership and resource management",
+                "name": "Single Host Incoming Requirement for Services",
+                "description": "Every service component must have exactly one hosting incoming relationship to establish clear ownership and resource management",
                 "rule": "Each Service node must have exactly one incoming relationship of type 'hosts' or 'provides' from another component.",
                 "graph_pattern": "(Host)-[:hosts|provides]->(S:Service) and count of such incoming relationships for S == 1",
                 "rationale": "Ensures accountability and avoids ambiguous ownership",
