@@ -28,7 +28,8 @@ services:
       - neo4j
 
   neo4j:
-    image: neo4j:5.15-community
+    # Use Enterprise edition to enable multi-database support so we can host both `macm` and `macn_nt`
+    image: neo4j:5.15-enterprise
     container_name: macm-neo4j
     environment:
       - NEO4J_AUTH=neo4j/macmpassword
