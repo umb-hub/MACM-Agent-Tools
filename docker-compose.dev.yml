@@ -13,6 +13,7 @@ services:
     volumes:
       # Mount source code for hot reload during development
       - ./src:/app/src:ro
+      - ./neo4j/queries:/app/neo4j/queries:ro
     restart: unless-stopped
     command: ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080", "--reload"]
     working_dir: /app/src

@@ -10,7 +10,7 @@ import os
 from core.models.base import ArchitectureModel
 from core.models.validation import ValidationResult
 from checkers.database import MacmDatabaseChecker
-
+from checkers.database_v2 import MacmDatabaseCheckerV2
 # Import other checkers if they exist
 try:
     from checkers.syntax import SyntaxChecker
@@ -63,10 +63,6 @@ async def validate_semantic(model: ArchitectureModel):
 @router.post("/database", response_model=ValidationResult)
 async def validate_database(
     model: ArchitectureModel,
-    neo4j_uri: Optional[str] = None,
-    neo4j_user: Optional[str] = None,
-    neo4j_password: Optional[str] = None,
-    neo4j_database: Optional[str] = None
 ):
     """
     Validate architecture model against MACM database constraints and triggers
@@ -75,17 +71,17 @@ async def validate_database(
     try:
         # Get Neo4j configuration from environment variables or parameters
         neo4j_config = {
-            "uri": neo4j_uri or os.getenv("NEO4J_URI", "bolt://localhost:7687"),
-            "user": neo4j_user or os.getenv("NEO4J_USER", "neo4j"),
-            "password": neo4j_password or os.getenv("NEO4J_PASSWORD", "password"),
-            "database": neo4j_database or os.getenv("NEO4J_DATABASE", "neo4j")
+            "uri":  os.getenv("NEO4J_URI", "bolt://localhost:7687"),
+            "user": os.getenv("NEO4J_USER", "neo4j"),
+            "password": os.getenv("NEO4J_PASSWORD", "password"),
+            "database": os.getenv("NEO4J_DATABASE", "neo4j")
         }
         
         # Validate required configuration
         if not all([neo4j_config["uri"], neo4j_config["user"], neo4j_config["password"]]):
             raise HTTPException(
                 status_code=400, 
-                detail="Neo4j configuration missing. Provide via environment variables (NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD) or request parameters"
+                detail="Neo4j configuration missing. Provide via environment variables (NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD)"
             )
         
         # Create and run database checker
@@ -103,6 +99,47 @@ async def validate_database(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database validation error: {str(e)}")
+
+@router.post("/database_v2", response_model=ValidationResult)
+async def validate_database_v2(
+    model: ArchitectureModel,
+):
+    """
+    Validate architecture model against MACM database constraints and triggers
+    Tests the model by attempting to load it into Neo4j database
+    """
+    try:
+        # Get Neo4j configuration from environment variables or parameters
+        neo4j_config = {
+            "uri":  os.getenv("NEO4J_URI", "bolt://localhost:7687"),
+            "user": os.getenv("NEO4J_USER", "neo4j"),
+            "password": os.getenv("NEO4J_PASSWORD", "password"),
+            "database": os.getenv("NEO4J_DATABASEV2", "neo4j")
+        }
+        
+        # Validate required configuration
+        if not all([neo4j_config["uri"], neo4j_config["user"], neo4j_config["password"]]):
+            raise HTTPException(
+                status_code=400, 
+                detail="Neo4j configuration missing. Provide via environment variables (NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD)"
+            )
+        
+        # Create and run database checker
+        checker = MacmDatabaseCheckerV2(neo4j_config)
+        
+        try:
+            result = await checker.validate_async(model)
+            return result
+        finally:
+            # Always close the checker
+            await checker.close()
+            
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database validation error: {str(e)}")
+
 
 
 @router.get("/database/constraints")
