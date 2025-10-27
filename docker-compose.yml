@@ -13,6 +13,7 @@ services:
     volumes:
       # Mount catalogs for live updates (optional)
       - ./catalogs:/app/src/catalogs:ro
+      - ./neo4j/queries:/app/neo4j/queries:ro
       # Mount source for development (uncomment for dev mode)
       # - ./src:/app/src:ro
     restart: unless-stopped
