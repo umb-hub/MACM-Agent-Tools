@@ -11,6 +11,8 @@ from core.models.base import ArchitectureModel
 from core.models.validation import ValidationResult
 from checkers.database import MacmDatabaseChecker
 from checkers.database_v2 import MacmDatabaseCheckerV2
+from checkers.database_v3 import MacmDatabaseCheckerV3
+
 # Import other checkers if they exist
 try:
     from checkers.syntax import SyntaxChecker
@@ -126,6 +128,46 @@ async def validate_database_v2(
         
         # Create and run database checker
         checker = MacmDatabaseCheckerV2(neo4j_config)
+        
+        try:
+            result = await checker.validate_async(model)
+            return result
+        finally:
+            # Always close the checker
+            await checker.close()
+            
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database validation error: {str(e)}")
+
+@router.post("/database_v3", response_model=ValidationResult)
+async def validate_database_v3(
+    model: ArchitectureModel,
+):
+    """
+    Validate architecture model against MACM database constraints and triggers
+    Tests the model by attempting to load it into Neo4j database
+    """
+    try:
+        # Get Neo4j configuration from environment variables or parameters
+        neo4j_config = {
+            "uri":  os.getenv("NEO4J_URI", "bolt://localhost:7687"),
+            "user": os.getenv("NEO4J_USER", "neo4j"),
+            "password": os.getenv("NEO4J_PASSWORD", "password"),
+            "database": os.getenv("NEO4J_DATABASEV2", "neo4j")
+        }
+        
+        # Validate required configuration
+        if not all([neo4j_config["uri"], neo4j_config["user"], neo4j_config["password"]]):
+            raise HTTPException(
+                status_code=400, 
+                detail="Neo4j configuration missing. Provide via environment variables (NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD)"
+            )
+        
+        # Create and run database checker
+        checker = MacmDatabaseCheckerV3(neo4j_config)
         
         try:
             result = await checker.validate_async(model)
