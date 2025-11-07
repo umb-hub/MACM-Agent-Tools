@@ -38,6 +38,9 @@ def get_relationship_types():
 def get_relationship_patterns_data():
     return load_relationship_patterns()
 
+def get_relationship_patterns_grouped_data():
+    return load_relationship_patterns(grouped=True)
+
 def get_protocols_data():
     return load_protocols()
 
@@ -88,6 +91,11 @@ async def get_relationships_endpoint():
 async def get_relationship_patterns_endpoint():
     """Get valid relationship patterns between asset types"""
     return get_relationship_patterns_data()
+
+@router.get("/relationship_pattern_grouped", response_model=List[RelationshipPattern])
+async def get_relationship_patterns_grouped_endpoint():
+    """Get valid relationship patterns between asset types"""
+    return get_relationship_patterns_grouped_data()
 
 
 @router.get("/protocols", response_model=List[Protocol])

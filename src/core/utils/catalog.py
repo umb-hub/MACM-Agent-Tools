@@ -72,28 +72,35 @@ def load_protocols() -> List[Protocol]:
     return protocols
 
 
-def load_relationship_patterns() -> List[RelationshipPattern]:
+def load_relationship_patterns(grouped: bool = False) -> List[RelationshipPattern]:
     """Load relationship patterns from CSV file"""
     data = read_csv_file("relationship_patterns.csv")
+
+    if not grouped:
+        return [RelationshipPattern(
+            source=row['source'],
+            type=row['relationship_type'],
+            target=[row['target']]
+        ) for row in data]
     
-    # Group by source and relationship_type to create array structure
-    patterns_dict = {}
-    for row in data:
-        key = (row['source'], row['relationship_type'])
-        if key not in patterns_dict:
-            patterns_dict[key] = []
-        patterns_dict[key].append(row['target'])
-    
-    # Convert to RelationshipPattern objects
-    patterns = []
-    for (source, rel_type), targets in patterns_dict.items():
-        patterns.append(RelationshipPattern(
-            source=source,
-            type=rel_type,
-            target=targets
-        ))
-    
-    return patterns
+    else:
+        # Group by source and relationship_type to create array structure
+        patterns_dict = {}
+        for row in data:
+            key = (row['source'], row['relationship_type'])
+            if key not in patterns_dict:
+                patterns_dict[key] = []
+            patterns_dict[key].append(row['target'])
+        
+        # Convert to RelationshipPattern objects
+        patterns = []
+        for (source, rel_type), targets in patterns_dict.items():
+            patterns.append(RelationshipPattern(
+                source=source,
+                type=rel_type,
+                target=targets
+            ))
+        return patterns
 
 
 def assign_labels_to_node(node) -> None:
