@@ -193,32 +193,59 @@ async def get_database_constraints():
     # Compact, grouped constraints summary (prompt-ready)
     # Groups combine related rules with a brief underlying rationale
     constraints = {
-        "title": "MACM database constraints - concise grouped summary",
-        "groups": [
+        "title": "MACM database constraints",
+         "summary": [
             {
-                "name": "Node labeling & properties",
-                "short": "Primary label must match the 'type' prefix; nodes must include component_id, primary_label and type. Secondary labels follow type-specific mappings.",
-                "reason": "Correct labeling and essential properties ensure nodes are classifiable and enable reliable pattern matching for all other rules."
+                "name": "Node type & label validity",
+                "short": "Primary label must match node type prefix; required properties: component_id, primary_label, type."
             },
             {
-                "name": "Relationship patterns & ownership",
-                "short": "Only predefined relation patterns between primary labels are allowed; Services/SystemLayer nodes must have exactly one incoming host/provide relationship.",
-                "reason": "Valid relation patterns and clear ownership prevent invalid connections and ambiguous responsibility, which simplifies downstream structural checks."
+                "name": "Asset type secondary labels",
+                "short": "Secondary labels must follow predefined mappings for each type (e.g., HW->Server, SystemLayer->OS)."
             },
             {
-                "name": "Structural integrity",
-                "short": "The graph must be connected and hosts relationships must be acyclic.",
-                "reason": "Connectivity and acyclicity guarantee the model represents a cohesive, well-layered architecture and avoid runtime/topology faults."
+                "name": "Relationship pattern validity",
+                "short": "Only allowed relation patterns between primary labels are permitted (e.g., Party-interacts-Service, SystemLayer-hosts-Virtual)."
             },
             {
-                "name": "Dependency resilience",
-                "short": "Every 'uses' dependency should have an alternate non-'uses' path between the same nodes.",
-                "reason": "Ensures redundancy and avoids single points of failure in dependency chains."
+                "name": "Graph connectivity",
+                "short": "Model must be connected: no isolated nodes (all nodes reachable in undirected graph)."
             },
             {
-                "name": "Hosting & virtualization rules",
-                "short": "SystemLayer and Virtualization pairing: OS hosts ContainerRuntime/HyperVisor; ContainerRuntime -> Virtual.Container; HyperVisor -> Virtual.VM; Firmware/OS host Services; HW must not directly host ContainerRuntime.",
-                "reason": "Enforces correct hosting hierarchy and virtualization pairing so runtime layers and hardware abstraction remain consistent."
+                "name": "Single-host for SystemLayer",
+                "short": "Each SystemLayer component must have exactly one incoming hosts/provides relationship."
+            },
+            {
+                "name": "Single-host for Service",
+                "short": "Each Service must have exactly one incoming hosts/provides relationship."
+            },
+            {
+                "name": "Hosts acyclicity",
+                "short": "The hosts hierarchy must be acyclic; cycles in :hosts relations are violations."
+            },
+            {
+                "name": "Alternate path for uses",
+                "short": "For every (A)-[:uses]->(B) there must exist an alternate path between A and B that does not use 'uses' relationships."
+            },
+            {
+                "name": "HW -> SystemLayer restrictions",
+                "short": "Hardware nodes cannot directly host SystemLayer.ContainerRuntime; an OS must mediate."
+            },
+            {
+                "name": "SystemLayer -> SystemLayer hosting rules",
+                "short": "Only specific SystemLayer types (e.g., OS) may host certain SystemLayer targets (ContainerRuntime, HyperVisor)."
+            },
+            {
+                "name": "SystemLayer -> Virtual hosting rules",
+                "short": "ContainerRuntime should host Virtual.Container; HyperVisor should host Virtual.VM."
+            },
+            {
+                "name": "Virtual -> SystemLayer hosting rules",
+                "short": "Virtual components may only host base SystemLayer nodes (OS or Firmware)."
+            },
+            {
+                "name": "SystemLayer hosting for Services",
+                "short": "Only SystemLayer.Firmware and SystemLayer.OS may host Service nodes."
             }
         ]
     }
