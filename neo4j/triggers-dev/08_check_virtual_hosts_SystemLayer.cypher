@@ -60,12 +60,28 @@ CALL apoc.trigger.add(
 	// Collect all violations
 	WITH collect(violationDetail) AS violations
 	
-	// Validate with detailed error reporting
+	// Validate with detailed error reporting and remediation guide
 	CALL apoc.util.validate(
 		size(violations) > 0,
-		"/*Rule 8 violation: Virtual-to-SystemLayer hosting relationship validation failed. " +
-		"Virtual nodes can only host base system layer components (OS and Firmware).\\n\\n" +
-		apoc.text.join(violations, "\\n\\n") + "*/",
+		"/*Rule 7 violation: Virtual hosting SystemLayer node validity - Invalid hosting relationships detected.\\n\\n" +
+		"VIOLATIONS:\\n" +
+		apoc.text.join(violations, "\\n\\n") + 
+		"\\n\\nRULE: Virtual nodes can only host SystemLayer.OS or SystemLayer.Firmware (base system layers).\\n" +
+		"\\nALLOWED PATTERNS:\\n" +
+		"  Virtual.VM -[:hosts]-> SystemLayer.OS\\n" +
+		"  Virtual.VM -[:hosts]-> SystemLayer.Firmware\\n" +
+		"  Virtual.Container -[:hosts]-> SystemLayer.OS\\n" +
+		"  Virtual.Container -[:hosts]-> SystemLayer.Firmware\\n" +
+		"\\nFORBIDDEN PATTERNS:\\n" +
+		"  Virtual.* -[:hosts]-> SystemLayer.ContainerRuntime (Wrong: ContainerRuntime should be hosted by OS)\\n" +
+		"  Virtual.* -[:hosts]-> SystemLayer.HyperVisor (Wrong: HyperVisor should be hosted by OS)\\n" +
+		"\\nREMEDIATION:\\n" +
+		"1. For virtualization layers inside VMs/Containers: Create proper hierarchy\\n" +
+		"   Virtual.VM -> SystemLayer.OS -> SystemLayer.HyperVisor (nested virtualization)\\n" +
+		"   Virtual.Container -> SystemLayer.OS -> SystemLayer.ContainerRuntime (Docker-in-Docker)\\n" +
+		"2. Remove direct [:hosts] from Virtual to ContainerRuntime/HyperVisor\\n" +
+		"3. Verify that the SystemLayer node type is appropriate for the virtualization context\\n" +
+		"\\nCOMMON SCENARIO: A VM typically hosts an OS, which then hosts services or other system layers*/",
 		[]
 	)
 	RETURN true

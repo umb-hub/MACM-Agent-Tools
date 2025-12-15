@@ -19,10 +19,21 @@ WITH start,
 // Only return a message if graph is NOT connected
 WITH start, notReachable
 WHERE size(notReachable) > 0
-RETURN apoc.text.format(
-  "/*Connectivity violation: graph is not connected. Start node: %s. Unreachable: %s*/",
-  [
-    coalesce(start.name, head(labels(start)), toString(id(start))),
-    apoc.text.join(notReachable, ", ")
-  ]
-) AS connectivity_violation;
+RETURN "Rule 9 violation: Graph Connectivity\n\n" +
+       "Starting from node: " + coalesce(start.name, start.component_id, head(labels(start)), toString(id(start))) + "\n" +
+       "Unreachable nodes (" + toString(size(notReachable)) + "): " + apoc.text.join(notReachable, ", ") + "\n\n" +
+       "REQUIREMENT: All nodes must be reachable from any other node (the graph must be connected).\n\n" +
+       "REMEDIATION:\n" +
+       "1. Identify disconnected components: Listed nodes are not connected to main graph\n" +
+       "2. Add appropriate relationships to connect isolated nodes/subgraphs:\n" +
+       "   - [:hosts] for hosting relationships (HW->OS, OS->Service, etc.)\n" +
+       "   - [:provides] for CSP-provided resources\n" +
+       "   - [:connects] for network connectivity\n" +
+       "   - [:uses] for service dependencies\n" +
+       "   - [:interacts] for Party interactions\n" +
+       "3. Verify every node has at least one relationship connecting it to the rest\n\n" +
+       "COMMON CAUSES:\n" +
+       "- Orphaned nodes without relationships\n" +
+       "- Separate infrastructure stacks not linked\n" +
+       "- Missing network connectivity\n" +
+       "- Forgotten CSP [:provides] relationships" AS connectivity_violation;

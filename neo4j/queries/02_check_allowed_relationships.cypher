@@ -64,4 +64,17 @@ WITH rel, relationshipType, sourceNode, targetNode,
      coalesce(sourcePrimaryLabel, "<no-primary-label>") AS spl,
      coalesce(targetPrimaryLabel, "<no-primary-label>") AS tpl
 
-RETURN apoc.text.format("Unauthorized relationship: %s -[:%s]-> %s (Pattern: %s -[:%s]-> %s is not allowed)", [sourceDescription, relationshipType, targetDescription, spl, relationshipType, tpl]) AS violationDetail;
+WITH apoc.text.format("Unauthorized relationship: %s -[:%s]-> %s (Pattern: %s -[:%s]-> %s is not allowed)", [sourceDescription, relationshipType, targetDescription, spl, relationshipType, tpl]) AS violationDetail
+RETURN "Rule 2 violation: Relationship validity patterns\n\n" +
+       "VIOLATION: " + violationDetail + "\n\n" +
+       "ALLOWED RELATIONSHIP PATTERNS:\n" +
+       "Party -> [:interacts] -> Service|HW|Network|Party|Virtual|SystemLayer|CSP\n" +
+       "Service -> [:uses] -> Service|Virtual\n" +
+       "Service -> [:hosts] -> Service\n" +
+       "Virtual -> [:hosts] -> SystemLayer\n" +
+       "SystemLayer -> [:hosts] -> SystemLayer|Virtual|Service|Network\n" +
+       "SystemLayer -> [:uses] -> HW\n" +
+       "HW -> [:hosts] -> HW|SystemLayer\n" +
+       "CSP -> [:provides] -> Service|Network|HW|Virtual|SystemLayer\n" +
+       "Network -> [:connects] -> Network|Virtual|HW|CSP\n\n" +
+       "REMEDIATION: Remove the unauthorized relationship or change node types/labels to match an allowed pattern." AS report;

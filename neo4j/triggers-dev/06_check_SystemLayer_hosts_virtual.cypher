@@ -65,12 +65,26 @@ CALL apoc.trigger.add(
 	// Collect all violations
 	WITH collect(violationDetail) AS violations
 	
-	// Validate with detailed error reporting
+	// Validate with detailed error reporting and remediation guide
 	CALL apoc.util.validate(
 		size(violations) > 0,
-		"/*Rule 6 violation: SystemLayer-to-Virtual hosting relationship validation failed. " +
-		"SystemLayer nodes can only host specific Virtual node types according to their virtualization model.\\n\\n" +
-		apoc.text.join(violations, "\\n\\n") + "*/",
+		"/*Rule 5 violation: SystemLayer hosting Virtual node validity - Invalid hosting relationships detected.\\n\\n" +
+		"VIOLATIONS:\\n" +
+		apoc.text.join(violations, "\\n\\n") + 
+		"\\n\\nRULE: SystemLayer can host Virtual nodes only with matching virtualization technology.\\n" +
+		"\\nALLOWED PATTERNS:\\n" +
+		"  SystemLayer.ContainerRuntime -[:hosts]-> Virtual.Container\\n" +
+		"  SystemLayer.HyperVisor -[:hosts]-> Virtual.VM\\n" +
+		"\\nFORBIDDEN PATTERNS:\\n" +
+		"  SystemLayer.ContainerRuntime -[:hosts]-> Virtual.VM (Wrong: ContainerRuntime cannot host VMs)\\n" +
+		"  SystemLayer.HyperVisor -[:hosts]-> Virtual.Container (Wrong: HyperVisor cannot host Containers)\\n" +
+		"  SystemLayer.OS -[:hosts]-> Virtual.* (Wrong: OS should host ContainerRuntime/HyperVisor, not Virtual directly)\\n" +
+		"  SystemLayer.Firmware -[:hosts]-> Virtual.* (Wrong: Firmware cannot host Virtual nodes)\\n" +
+		"\\nREMEDIATION:\\n" +
+		"1. Verify virtualization technology match: ContainerRuntime <-> Container, HyperVisor <-> VM\\n" +
+		"2. Check the hosting hierarchy: HW -> OS -> ContainerRuntime/HyperVisor -> Virtual\\n" +
+		"3. Add missing intermediate layers if necessary (e.g., add SystemLayer.HyperVisor between OS and VM)\\n" +
+		"4. Correct node types to match the actual virtualization technology used*/",
 		[]
 	)
 	RETURN true

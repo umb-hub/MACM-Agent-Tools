@@ -57,12 +57,26 @@ CALL apoc.trigger.add(
 	// Collect all violations
 	WITH collect(violationDetail) AS violations
 	
-	// Validate with detailed error reporting
+	// Validate with detailed error reporting and remediation guide
 	CALL apoc.util.validate(
 		size(violations) > 0,
-		"/*Rule 7 violation: SystemLayer-to-Service hosting relationship validation failed. " +
-		"Only base system layers (Firmware and OS) are allowed to directly host Service nodes.\\n\\n" +
-		apoc.text.join(violations, "\\n\\n") + "*/",
+		"/*Rule 6 violation: SystemLayer hosting Service node validity - Invalid hosting relationships detected.\\n\\n" +
+		"VIOLATIONS:\\n" +
+		apoc.text.join(violations, "\\n\\n") + 
+		"\\n\\nRULE: Only SystemLayer.Firmware and SystemLayer.OS can directly host Service nodes.\\n" +
+		"\\nALLOWED PATTERNS:\\n" +
+		"  SystemLayer.Firmware -[:hosts]-> Service.*\\n" +
+		"  SystemLayer.OS -[:hosts]-> Service.*\\n" +
+		"\\nFORBIDDEN PATTERNS:\\n" +
+		"  SystemLayer.ContainerRuntime -[:hosts]-> Service.* (Wrong: Use Virtual.Container as intermediate)\\n" +
+		"  SystemLayer.HyperVisor -[:hosts]-> Service.* (Wrong: Use Virtual.VM as intermediate)\\n" +
+		"\\nREMEDIATION:\\n" +
+		"1. For services in containers: Create path SystemLayer.ContainerRuntime -> Virtual.Container -> Service\\n" +
+		"2. For services in VMs: Create path SystemLayer.HyperVisor -> Virtual.VM -> Service\\n" +
+		"3. For bare-metal services: Use SystemLayer.OS -> Service or SystemLayer.Firmware -> Service\\n" +
+		"\\nEXAMPLE CORRECTIONS:\\n" +
+		"  WRONG: ContainerRuntime -[:hosts]-> WebService\\n" +
+		"  RIGHT: ContainerRuntime -[:hosts]-> DockerContainer, DockerContainer -[:hosts]-> WebService*/",
 		[]
 	)
 	RETURN true

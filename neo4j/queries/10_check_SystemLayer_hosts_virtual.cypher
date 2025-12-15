@@ -25,4 +25,19 @@ WITH sourceNode, targetNode,
         THEN apoc.text.format("Node[name: %s, type: %s, labels: %s]", [targetNode.name, coalesce(targetNode.type, "<no-type>"), apoc.text.join(labels(targetNode), ",")])
         ELSE apoc.text.format("Node[id: %s, type: %s, labels: %s]", [toString(id(targetNode)), coalesce(targetNode.type, "<no-type>"), apoc.text.join(labels(targetNode), ",")])
      END AS targetDescription
-RETURN apoc.text.format("Invalid SystemLayer-to-Virtual hosting relationship: %s -[:hosts]-> %s\n  Source type: %s\n  Target type: %s\n  Allowed patterns: SystemLayer.ContainerRuntime -> Virtual.Container OR SystemLayer.HyperVisor -> Virtual.VM", [sourceDescription, targetDescription, coalesce(sourceNode.type, "<no-type>"), coalesce(targetNode.type, "<no-type>")]) AS violationDetail;
+WITH apoc.text.format("Invalid SystemLayer-to-Virtual hosting: %s -[:hosts]-> %s\n  Source: %s\n  Target: %s", [sourceDescription, targetDescription, coalesce(sourceNode.type, "<no-type>"), coalesce(targetNode.type, "<no-type>")]) AS violation
+RETURN "Rule 5 violation: SystemLayer hosting Virtual node validity\n\n" +
+       violation + "\n\n" +
+       "RULE: SystemLayer can host Virtual only with matching virtualization technology.\n\n" +
+       "ALLOWED PATTERNS:\n" +
+       "  SystemLayer.ContainerRuntime -[:hosts]-> Virtual.Container\n" +
+       "  SystemLayer.HyperVisor -[:hosts]-> Virtual.VM\n\n" +
+       "FORBIDDEN PATTERNS:\n" +
+       "  SystemLayer.ContainerRuntime -[:hosts]-> Virtual.VM (Wrong: ContainerRuntime cannot host VMs)\n" +
+       "  SystemLayer.HyperVisor -[:hosts]-> Virtual.Container (Wrong: HyperVisor cannot host Containers)\n" +
+       "  SystemLayer.OS -[:hosts]-> Virtual.* (Wrong: OS should host ContainerRuntime/HyperVisor, not Virtual directly)\n\n" +
+       "REMEDIATION:\n" +
+       "1. Verify technology match: ContainerRuntime <-> Container, HyperVisor <-> VM\n" +
+       "2. Check hierarchy: HW -> OS -> ContainerRuntime/HyperVisor -> Virtual\n" +
+       "3. Add missing intermediate layers if needed\n" +
+       "4. Correct node types to match actual virtualization technology" AS report;

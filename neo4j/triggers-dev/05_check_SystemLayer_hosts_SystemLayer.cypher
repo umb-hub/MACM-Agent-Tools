@@ -63,12 +63,25 @@ CALL apoc.trigger.add(
 	// Collect all violations
 	WITH collect(violationDetail) AS violations
 	
-	// Validate with detailed error reporting
+	// Validate with detailed error reporting and remediation guide
 	CALL apoc.util.validate(
 		size(violations) > 0,
-		"/*Rule 5 violation: SystemLayer hosting relationship validation failed. " +
-		"SystemLayer nodes can only host other SystemLayer nodes under specific conditions.\\n\\n" +
-		apoc.text.join(violations, "\\n\\n") + "*/",
+		"/*Rule 4 violation: SystemLayer hosting SystemLayer node validity - Invalid hosting relationships detected.\\n\\n" +
+		"VIOLATIONS:\\n" +
+		apoc.text.join(violations, "\\n\\n") + 
+		"\\n\\nRULE: Only SystemLayer.OS can host other SystemLayer nodes (specifically ContainerRuntime or HyperVisor).\\n" +
+		"\\nALLOWED PATTERNS:\\n" +
+		"  SystemLayer.OS -[:hosts]-> SystemLayer.ContainerRuntime\\n" +
+		"  SystemLayer.OS -[:hosts]-> SystemLayer.HyperVisor\\n" +
+		"\\nFORBIDDEN PATTERNS (examples):\\n" +
+		"  SystemLayer.Firmware -[:hosts]-> SystemLayer.* (Firmware cannot host other SystemLayer)\\n" +
+		"  SystemLayer.ContainerRuntime -[:hosts]-> SystemLayer.* (ContainerRuntime cannot host SystemLayer)\\n" +
+		"  SystemLayer.HyperVisor -[:hosts]-> SystemLayer.* (HyperVisor cannot host SystemLayer)\\n" +
+		"\\nREMEDIATION:\\n" +
+		"1. Check the source node type: Only SystemLayer.OS should host other SystemLayer nodes\\n" +
+		"2. Check the target node type: Only ContainerRuntime and HyperVisor can be hosted by OS\\n" +
+		"3. Remove invalid [:hosts] relationships or change node types to match allowed patterns\\n" +
+		"4. If needed, add an intermediate SystemLayer.OS node between HW and virtualization layers*/",
 		[]
 	)
 	RETURN true

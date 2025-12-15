@@ -60,12 +60,28 @@ CALL apoc.trigger.add(
 	// Collect all violations
 	WITH collect(violationDetail) AS violations
 	
-	// Validate with detailed error reporting
+	// Validate with detailed error reporting and remediation guide
 	CALL apoc.util.validate(
 		size(violations) > 0,
-		"/*Rule 9 violation: HW-to-SystemLayer hosting relationship validation failed. " +
-		"Hardware cannot directly host ContainerRuntime - proper layering requires OS intermediation.\\n\\n" +
-		apoc.text.join(violations, "\\n\\n") + "*/",
+		"/*Rule 8 violation: Hardware hosting SystemLayer node validity - Invalid hosting relationships detected.\\n\\n" +
+		"VIOLATIONS:\\n" +
+		apoc.text.join(violations, "\\n\\n") + 
+		"\\n\\nRULE: Hardware nodes cannot directly host SystemLayer.ContainerRuntime.\\n" +
+		"\\nALLOWED PATTERNS:\\n" +
+		"  HW.* -[:hosts]-> SystemLayer.Firmware\\n" +
+		"  HW.* -[:hosts]-> SystemLayer.OS\\n" +
+		"  HW.* -[:hosts]-> SystemLayer.HyperVisor\\n" +
+		"\\nFORBIDDEN PATTERN:\\n" +
+		"  HW.* -[:hosts]-> SystemLayer.ContainerRuntime (Wrong: ContainerRuntime requires OS)\\n" +
+		"\\nREMEDIATION:\\n" +
+		"1. Add intermediate SystemLayer.OS node: HW -> OS -> ContainerRuntime\\n" +
+		"2. Verify the proper layering hierarchy for containerization:\\n" +
+		"   HW.Server -[:hosts]-> SystemLayer.OS -[:hosts]-> SystemLayer.ContainerRuntime\\n" +
+		"3. ContainerRuntime must always run on top of an Operating System\\n" +
+		"\\nCORRECT EXAMPLE:\\n" +
+		"  WRONG: HW.Server -[:hosts]-> SystemLayer.ContainerRuntime\\n" +
+		"  RIGHT: HW.Server -[:hosts]-> SystemLayer.OS, SystemLayer.OS -[:hosts]-> SystemLayer.ContainerRuntime\\n" +
+		"\\nRATIONALE: Container runtimes (like Docker, containerd) are software that require an OS to function*/",
 		[]
 	)
 	RETURN true

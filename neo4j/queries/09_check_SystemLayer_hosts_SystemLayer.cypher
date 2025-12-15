@@ -24,4 +24,19 @@ WITH sourceNode, targetNode,
         THEN apoc.text.format("Node[name: %s, type: %s, labels: %s]", [targetNode.name, coalesce(targetNode.type, "<no-type>"), apoc.text.join(labels(targetNode), ",")])
         ELSE apoc.text.format("Node[id: %s, type: %s, labels: %s]", [toString(id(targetNode)), coalesce(targetNode.type, "<no-type>"), apoc.text.join(labels(targetNode), ",")])
      END AS targetDescription
-RETURN apoc.text.format("Invalid SystemLayer hosting relationship: %s -[:hosts]-> %s\n  Source type: %s\n  Target type: %s\n  Rule: Only SystemLayer.OS can host other SystemLayer nodes (specifically SystemLayer.ContainerRuntime or SystemLayer.HyperVisor)", [sourceDescription, targetDescription, coalesce(sourceNode.type, "<no-type>"), coalesce(targetNode.type, "<no-type>")]) AS violationDetail;
+WITH apoc.text.format("Invalid SystemLayer hosting: %s -[:hosts]-> %s\n  Source: %s\n  Target: %s", [sourceDescription, targetDescription, coalesce(sourceNode.type, "<no-type>"), coalesce(targetNode.type, "<no-type>")]) AS violation
+RETURN "Rule 4 violation: SystemLayer hosting SystemLayer node validity\n\n" +
+       violation + "\n\n" +
+       "RULE: Only SystemLayer.OS can host other SystemLayer nodes (ContainerRuntime or HyperVisor).\n\n" +
+       "ALLOWED PATTERNS:\n" +
+       "  SystemLayer.OS -[:hosts]-> SystemLayer.ContainerRuntime\n" +
+       "  SystemLayer.OS -[:hosts]-> SystemLayer.HyperVisor\n\n" +
+       "FORBIDDEN PATTERNS:\n" +
+       "  SystemLayer.Firmware -[:hosts]-> SystemLayer.*\n" +
+       "  SystemLayer.ContainerRuntime -[:hosts]-> SystemLayer.*\n" +
+       "  SystemLayer.HyperVisor -[:hosts]-> SystemLayer.*\n\n" +
+       "REMEDIATION:\n" +
+       "1. Check source: Only SystemLayer.OS should host other SystemLayer nodes\n" +
+       "2. Check target: Only ContainerRuntime and HyperVisor can be hosted by OS\n" +
+       "3. Remove invalid [:hosts] or change node types\n" +
+       "4. If needed, add intermediate SystemLayer.OS between HW and virtualization layers" AS report;

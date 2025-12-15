@@ -98,11 +98,23 @@ CALL apoc.trigger.add(
 	
 	WITH collect(violationDetail) AS violations
 	
-	// Validate with detailed error reporting
+	// Validate with detailed error reporting including allowed patterns guide
 	CALL apoc.util.validate(
 		size(violations) > 0,
-		"/*Rule 3 violation: Relationship validation failed. The following unauthorized relationships were found:\\n\\n" + 
-		apoc.text.join(violations, "\\n\\n") + "*/",
+		"/*Rule 2 violation: Relationship validity patterns - Unauthorized relationships detected.\\n\\n" + 
+		"VIOLATIONS:\\n" +
+		apoc.text.join(violations, "\\n\\n") + 
+		"\\n\\nALLOWED RELATIONSHIP PATTERNS:\\n" +
+		"Party -> [:interacts] -> Service|HW|Network|Party|Virtual|SystemLayer|CSP\\n" +
+		"Service -> [:uses] -> Service|Virtual\\n" +
+		"Service -> [:hosts] -> Service\\n" +
+		"Virtual -> [:hosts] -> SystemLayer\\n" +
+		"SystemLayer -> [:hosts] -> SystemLayer|Virtual|Service|Network\\n" +
+		"SystemLayer -> [:uses] -> HW\\n" +
+		"HW -> [:hosts] -> HW|SystemLayer\\n" +
+		"CSP -> [:provides] -> Service|Network|HW|Virtual|SystemLayer\\n" +
+		"Network -> [:connects] -> Network|Virtual|HW|CSP\\n" +
+		"\\nREMEDIATION: Remove the unauthorized relationship(s) or change the node types/labels to match an allowed pattern.*/",
 		[]
 	)
 	RETURN true

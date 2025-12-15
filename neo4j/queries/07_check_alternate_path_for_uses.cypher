@@ -24,4 +24,19 @@ WITH sourceNode, targetNode,
         THEN apoc.text.format("Node[name: %s, labels: %s]", [targetNode.name, apoc.text.join(labels(targetNode), ",")])
         ELSE apoc.text.format("Node[id: %s, labels: %s]", [toString(id(targetNode)), apoc.text.join(labels(targetNode), ",")])
      END AS targetDescription
-RETURN apoc.text.format("USES relationship without alternate path: %s -[:uses]-> %s", [sourceDescription, targetDescription]) AS violationDetail;
+WITH apoc.text.format("USES relationship without alternate path: %s -[:uses]-> %s", [sourceDescription, targetDescription]) AS violationDetail
+RETURN "Rule 3 violation: Alternate path for uses\n\n" +
+       "VIOLATION: " + violationDetail + "\n\n" +
+       "REQUIREMENT: For each A -[:uses]-> B, there must exist at least one path connecting A and B that:\n" +
+       "  - Uses relationships OTHER than [:uses] (e.g., [:hosts], [:provides], [:connects])\n" +
+       "  - Does NOT include [:interacts] relationships\n\n" +
+       "REMEDIATION GUIDE:\n" +
+       "1. Analyze infrastructure: Identify how source/target are physically/logically connected\n" +
+       "2. Add missing hosting relationships: If both services run on same system, add [:hosts]\n" +
+       "3. Add infrastructure relationships: [:connects] for networks, [:provides] from CSP\n" +
+       "4. Verify alternate path connects both nodes without using [:uses]\n\n" +
+       "EXAMPLE:\n" +
+       "If ServiceA -[:uses]-> ServiceB, you might add:\n" +
+       "  SystemLayerX -[:hosts]-> ServiceA\n" +
+       "  SystemLayerX -[:hosts]-> ServiceB\n" +
+       "  (Creates alternate: ServiceA <-[:hosts]- SystemLayerX -[:hosts]-> ServiceB)" AS report;

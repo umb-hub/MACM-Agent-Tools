@@ -51,12 +51,24 @@ CALL apoc.trigger.add(
 	// Collect all violations
 	WITH collect(violationDetail) AS violations
 	
-	// Validate with detailed error reporting
+	// Validate with detailed error reporting and remediation guide
 	CALL apoc.util.validate(
 		size(violations) > 0,
-		"/*Rule 4 violation: USES relationship alternate path validation failed. " +
-		"Every \\"uses\\" relationship must have at least one alternate path that does not use \\"uses\\" relationships.\\n\\n" +
-		apoc.text.join(violations, "\\n\\n") + "*/",
+		"/*Rule 3 violation: Alternate path for uses - Every [:uses] relationship must have at least one alternate path.\\n\\n" +
+		"VIOLATIONS:\\n" +
+		apoc.text.join(violations, "\\n\\n") + 
+		"\\n\\nREQUIREMENT: For each A -[:uses]-> B relationship, there must exist at least one path connecting A and B that:\\n" +
+		"  - Uses relationships OTHER than [:uses] (e.g., [:hosts], [:provides], [:connects])\\n" +
+		"  - Does NOT include [:interacts] relationships\\n" +
+		"\\nREMEDIATION GUIDE:\\n" +
+		"1. Analyze the infrastructure: Identify how the source and target are physically/logically connected\\n" +
+		"2. Add missing hosting relationships: E.g., if both services run on the same system, add [:hosts] from that system\\n" +
+		"3. Add infrastructure relationships: E.g., [:connects] for network connectivity, [:provides] from CSP\\n" +
+		"4. Verify the alternate path: Ensure the new path connects both nodes without using [:uses]\\n" +
+		"\\nEXAMPLE: If ServiceA -[:uses]-> ServiceB, you might add:\\n" +
+		"  SystemLayerX -[:hosts]-> ServiceA\\n" +
+		"  SystemLayerX -[:hosts]-> ServiceB\\n" +
+		"  (This creates an alternate path: ServiceA <-[:hosts]- SystemLayerX -[:hosts]-> ServiceB)*/",
 		[]
 	)
 	RETURN true
